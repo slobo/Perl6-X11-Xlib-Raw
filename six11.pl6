@@ -9,6 +9,7 @@ class _XrmHashBucketRec is repr('CPointer') {}
 class XPointer is repr('CPointer') {}
 constant Window := ulong;
 constant Colormap := ulong;
+constant Drawable := ulong;
 
 class Display is repr('CStruct') {...};
 
@@ -36,11 +37,7 @@ class Depth is repr('CStruct') {};
 
 class XEvent is repr('CUnion') {
   has int32 $.type;    # /* must not be changed; first element */
-  has long $.pad0;
-  has long $.pad1;
-  has long $.pad2;
-  has long $.pad3;
-  has long $.pad4;
+  has long $.pad;
   # XAnyEvent xany;
   # XKeyEvent xkey;
   # XButtonEvent xbutton;
@@ -160,6 +157,8 @@ class Display {
   method RootWindow($scr) { $.ScreenOfDisplay($scr).root }
   method BlackPixel($scr) { $.ScreenOfDisplay($scr).black_pixel }
   method WhitePixel($scr) { $.ScreenOfDisplay($scr).white_pixel }
+  method DefaultGC($scr)  { $.ScreenOfDisplay($scr).default_gc }
+
 }
 
 sub XOpenDisplay(Str) returns Display is native('/opt/X11/lib/libX11.dylib') { * }
@@ -193,6 +192,26 @@ sub XNextEvent(
 
 sub XCloseDisplay(
     Display, # display
+) returns int32 is native('/opt/X11/lib/libX11.dylib') { * }
+
+sub XFillRectangle(
+    Display, #		/* display */,
+    Drawable, #		/* d */,
+    GC, #			/* gc */,
+    int32, #			/* x */,
+    int32, #			/* y */,
+    uint32, #	/* width */,
+    uint32,	#/* height */
+) returns int32 is native('/opt/X11/lib/libX11.dylib') { * }
+
+sub XDrawString(
+    Display, #		/* display */,
+    Drawable, #		/* d */,
+    GC, #			/* gc */,
+    int32, #			/* x */,
+    int32, #			/* y */,
+    Str, #	/* string */,
+    int32 #			/* length */
 ) returns int32 is native('/opt/X11/lib/libX11.dylib') { * }
 
 enum XEventMask (
@@ -262,52 +281,42 @@ enum Event (
   LASTEvent    => 36,
 );
 
+# Taken from https://en.wikipedia.org/wiki/Xlib#Example
 sub MAIN(){
-  # /* open connection with the server */
+  note '/* open connection with the server */';
   my $display = XOpenDisplay("") or die 'Cannot open display';
-  say 'Display opened';
-  # say $display;
 
   my $s = $display.DefaultScreen();
 
-  my $screen = $display.ScreenOfDisplay($s);
-
-  say $screen;
-  say $screen.width ~ ' x ' ~ $screen.height;
-
-  # /* create window */
+  note '/* create window */';
   my Window $window = XCreateSimpleWindow($display, $display.RootWindow($s), 10, 10, 200, 200, 1,
     $display.BlackPixel($s), $display.WhitePixel($s)
   );
 
-  # /* select kind of events we are interested in */
+  note '/* select kind of events we are interested in */';
   XSelectInput($display, $window, ExposureMask +| KeyPressMask);
 
-  # /* map (show) the window */
+  note '/* map (show) the window */';
   XMapWindow($display, $window);
 
-  say 'entering main loop';
+  my Str $msg = "Hello, World!";
   my XEvent $event .= new;
+  note '/* event loop */';
   loop {
-    say 'loop';
-    # say $event;
     XNextEvent($display, $event);
-    say $event;
     given $event.type {
-      # draw or redraw the window
       when Expose {
-        # XFillRectangle(display, window, DefaultGC(display, s), 20, 20, 10, 10);
-        # XDrawString(display, window, DefaultGC(display, s), 50, 50, msg, strlen(msg));
-        say 'expose'
+        note '/* draw or redraw the window */';
+        XFillRectangle($display, $window, $display.DefaultGC($s), 20, 20, 10, 10);
+        XDrawString($display, $window, $display.DefaultGC($s), 50, 50, $msg, $msg.chars);
       }
-      # exit on key press
       when KeyPress {
+        note '/* exit on key press */';
         last
       }
     }
   };
 
-  # /* close connection to server */
+  note '/* close connection to server */';
   XCloseDisplay($display);
-
 }
