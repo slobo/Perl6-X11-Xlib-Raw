@@ -7,8 +7,8 @@ class XExtData is repr('CPointer') {}
 class _XPrivate is repr('CPointer') {}
 class _XrmHashBucketRec is repr('CPointer') {}
 class XPointer is repr('CPointer') {}
-constant Window := uint32;
-constant Colormap := uint32;
+constant Window := ulong;
+constant Colormap := ulong;
 
 class Display is repr('CStruct') {...};
 
