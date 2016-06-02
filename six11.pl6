@@ -277,7 +277,7 @@ sub MAIN(){
 
   # /* create window */
   my Window $window = XCreateSimpleWindow($display, $display.RootWindow($s), 10, 10, 200, 200, 1,
-    $display.BlackPixel($s), $display.BlackPixel($s)
+    $display.BlackPixel($s), $display.WhitePixel($s)
   );
 
   # /* select kind of events we are interested in */
