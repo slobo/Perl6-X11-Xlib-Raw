@@ -144,7 +144,7 @@ class Display {
   has Str $.display_name;  #/* "host:display" string used on this connect*/
   has int32 $.default_screen;  #/* default screen for operations */
   has int32 $.nscreens;    #/* number of screens on this server*/
-  has Pointer[Screen] $.screens;  #/* pointer to list of screens */
+  has Pointer[Screen] $!pscreens;  #/* pointer to list of screens */
   has ulong $.motion_buffer;  #/* size of motion buffer */
   has ulong $!private16;
   has int32 $.min_keycode;  #/* minimum defined keycode */
@@ -156,10 +156,11 @@ class Display {
   # /* there is more to this structure, but it is private to Xlib */
   #
   method DefaultScreen() { $.default_screen }
-  method ScreenOfDisplay($scr) {
-    my $screens = LinearArray[Screen].new-from-pointer(size => $.nscreens, ptr => $.screens);
-    $.screens[$scr].deref;
+  method screens() {
+    state $screens = LinearArray[Screen].new-from-pointer(size => $.nscreens, ptr => $!pscreens);
+    return $screens;
   }
+  method ScreenOfDisplay($scr) { $.screens[$scr]; }
   method RootWindow($scr) { $.ScreenOfDisplay($scr).root }
   method BlackPixel($scr) { $.ScreenOfDisplay($scr).black_pixel }
   method WhitePixel($scr) { $.ScreenOfDisplay($scr).white_pixel }
