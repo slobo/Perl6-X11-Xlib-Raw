@@ -1,6 +1,7 @@
 unit module X11::Xlib::Raw;
 
 use NativeCall;
+use NativeHelpers::CStruct;
 
 constant XID      is export := ulong;
 constant Window   is export := XID;
@@ -76,7 +77,7 @@ class XEvent is repr('CUnion') is export {
   # long pad[24];
 };
 
-class Screen is repr('CStruct') {
+class Screen is repr('CStruct') is export {
   has XExtData $.ext_data; #  /* hook for extension to hang data */
   has Display $.display;    #/* back pointer to display structure */
   has Window $.root;    #/* Root window id. */
@@ -155,7 +156,10 @@ class Display {
   # /* there is more to this structure, but it is private to Xlib */
   #
   method DefaultScreen() { $.default_screen }
-  method ScreenOfDisplay($scr) { $.screens[$scr].deref }
+  method ScreenOfDisplay($scr) {
+    my $screens = LinearArray[Screen].new-from-pointer(size => $.nscreens, ptr => $.screens);
+    $.screens[$scr].deref;
+  }
   method RootWindow($scr) { $.ScreenOfDisplay($scr).root }
   method BlackPixel($scr) { $.ScreenOfDisplay($scr).black_pixel }
   method WhitePixel($scr) { $.ScreenOfDisplay($scr).white_pixel }
