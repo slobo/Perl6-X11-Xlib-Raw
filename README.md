@@ -8,4 +8,4 @@ Only a subset needed to cover the basic example is currently supported.
 
 Filename     | Description
 -------------|----------------------------------------
-01-basic.pl6 | Replicates the [Xlib Example from Wikipedia](https://en.wikipedia.org/wiki/Xlib#Example)
+[01-basic](examples/01-basic.pl6) | Replicates the [Xlib Example from Wikipedia](https://en.wikipedia.org/wiki/Xlib#Example)
