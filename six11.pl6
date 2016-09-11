@@ -24,6 +24,7 @@ sub MAIN(){
   note '/* event loop */';
   loop {
     XNextEvent($display, $event);
+    note $event;
     given $event.type {
       when Expose {
         note '/* draw or redraw the window */';
