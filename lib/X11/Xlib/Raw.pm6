@@ -4,7 +4,11 @@ use NativeCall;
 use NativeHelpers::CStruct;
 
 sub libX11 {
-  $*VM.platform-library-name('X11'.IO).Str;
+  $*VM.config<os> eq 'darwin'
+    # for OSX, XQuartz is installed in /opt and not in search path
+    ?? '/opt/X11/lib/libX11.dylib'
+    # for rest, just ask the system
+    !! $*VM.platform-library-name('X11'.IO).Str
 }
 
 constant XID      is export := ulong;
