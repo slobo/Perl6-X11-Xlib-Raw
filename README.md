@@ -1,4 +1,4 @@
-# X11::Xlib::Raw
+# X11::Xlib::Raw [![Build Status](https://travis-ci.org/slobo/Perl6-X11-Xlib-Raw.svg?branch=master)](https://travis-ci.org/slobo/Perl6-X11-Xlib-Raw) 
 
 A `NativeCall` interface to `Xlib`.
 
