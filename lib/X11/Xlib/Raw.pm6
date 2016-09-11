@@ -59,7 +59,53 @@ class XExposeEvent is repr('CStruct') {
   has int32 $.height;
   has int32 $.count;      # /* if non-zero, at least this many more */
 };
+
+#| Event names. Used in "type" field in XEvent structures.
+enum Event is export (
+  KeyPress         => 2,
+  KeyRelease       => 3,
+  ButtonPress      => 4,
+  ButtonRelease    => 5,
+  MotionNotify     => 6,
+  EnterNotify      => 7,
+  LeaveNotify      => 8,
+  FocusIn          => 9,
+  FocusOut         => 10,
+  KeymapNotify     => 11,
+  Expose           => 12,
+  GraphicsExpose   => 13,
+  NoExpose         => 14,
+  VisibilityNotify => 15,
+  CreateNotify     => 16,
+  DestroyNotify    => 17,
+  UnmapNotify      => 18,
+  MapNotify        => 19,
+  MapRequest       => 20,
+  ReparentNotify   => 21,
+  ConfigureNotify  => 22,
+  ConfigureRequest => 23,
+  GravityNotify    => 24,
+  ResizeRequest    => 25,
+  CirculateNotify  => 26,
+  CirculateRequest => 27,
+  PropertyNotify   => 28,
+  SelectionClear   => 29,
+  SelectionRequest => 30,
+  SelectionNotify  => 31,
+  ColormapNotify   => 32,
+  ClientMessage    => 33,
+  MappingNotify    => 34,
+  GenericEvent     => 35,
+  LASTEvent        => 36,
+);
+
 class XEvent is repr('CUnion') is export {
+  method gist {
+    given $.type {
+      when Expose { $!xexpose.gist }
+    }
+  }
+
   has int32 $.type;    # /* must not be changed; first element */
   # XAnyEvent xany;
   # XKeyEvent xkey;
@@ -304,42 +350,4 @@ enum XEventMask is export (
   PropertyChangeMask        => 1 +< 22,
   ColormapChangeMask        => 1 +< 23,
   OwnerGrabButtonMask       => 1 +< 24,
-);
-
-enum Event is export (
-  KeyPress    => 2,
-  KeyRelease    => 3,
-  ButtonPress    => 4,
-  ButtonRelease    => 5,
-  MotionNotify    => 6,
-  EnterNotify    => 7,
-  LeaveNotify    => 8,
-  FocusIn      => 9,
-  FocusOut   => 10,
-  KeymapNotify   => 11,
-  Expose      => 12,
-  GraphicsExpose   => 13,
-  NoExpose   => 14,
-  VisibilityNotify  => 15,
-  CreateNotify   => 16,
-  DestroyNotify    => 17,
-  UnmapNotify    => 18,
-  MapNotify    => 19,
-  MapRequest   => 20,
-  ReparentNotify   => 21,
-  ConfigureNotify    => 22,
-  ConfigureRequest  => 23,
-  GravityNotify    => 24,
-  ResizeRequest    => 25,
-  CirculateNotify    => 26,
-  CirculateRequest  => 27,
-  PropertyNotify   => 28,
-  SelectionClear   => 29,
-  SelectionRequest  => 30,
-  SelectionNotify    => 31,
-  ColormapNotify   => 32,
-  ClientMessage    => 33,
-  MappingNotify    => 34,
-  GenericEvent   => 35,
-  LASTEvent    => 36,
 );
