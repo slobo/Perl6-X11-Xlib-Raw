@@ -44,7 +44,6 @@ class Depth is repr('CStruct') {};
 
 class XEvent is repr('CUnion') is export {
   has int32 $.type;    # /* must not be changed; first element */
-  has long $.pad;
   # XAnyEvent xany;
   # XKeyEvent xkey;
   # XButtonEvent xbutton;
@@ -78,7 +77,16 @@ class XEvent is repr('CUnion') is export {
   # XKeymapEvent xkeymap;
   # XGenericEvent xgeneric;
   # XGenericEventCookie xcookie;
-  # long pad[24];
+  # horrible hack to size the XEvent struct
+  class Padding24 is repr('CStruct') {
+    has long $.pad01; has long $.pad02; has long $.pad03; has long $.pad04;
+    has long $.pad05; has long $.pad06; has long $.pad07; has long $.pad08;
+    has long $.pad09; has long $.pad10; has long $.pad11; has long $.pad12;
+    has long $.pad13; has long $.pad14; has long $.pad15; has long $.pad16;
+    has long $.pad17; has long $.pad18; has long $.pad19; has long $.pad20;
+    has long $.pad21; has long $.pad22; has long $.pad23; has long $.pad24;
+  };
+  HAS Padding24 $!pad; # long pad[24];
 };
 
 class Screen is repr('CStruct') is export {
