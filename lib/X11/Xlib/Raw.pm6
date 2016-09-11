@@ -11,6 +11,7 @@ constant XID      is export := ulong;
 constant Window   is export := XID;
 constant Colormap is export := XID;
 constant Drawable is export := XID;
+constant XBool    is export := int32;
 
 
 class XExtData is repr('CPointer') {}
@@ -42,6 +43,22 @@ class Depth is repr('CStruct') {};
 #   int nvisuals;    /* number of Visual types at this depth */
 #   Visual *visuals;  /* list of visuals possible at this depth */
 
+
+class XExposeEvent is repr('CStruct') {
+  method gist {
+    "XExposeEvent #$.serial Window $.window {$.width}x{$.height}@($.x,$.y) {$.send_event ?? 'from SendEvent' !! ''}"
+  }
+  has int32 $.type;
+  has ulong $.serial;     # /* # of last request processed by server */
+  has XBool $.send_event; # /* true if this came from a SendEvent request */
+  has Display $.display;  # /* Display the event was read from */
+  has Window $.window;
+  has int32 $.x;
+  has int32 $.y;
+  has int32 $.width;
+  has int32 $.height;
+  has int32 $.count;      # /* if non-zero, at least this many more */
+};
 class XEvent is repr('CUnion') is export {
   has int32 $.type;    # /* must not be changed; first element */
   # XAnyEvent xany;
@@ -50,7 +67,7 @@ class XEvent is repr('CUnion') is export {
   # XMotionEvent xmotion;
   # XCrossingEvent xcrossing;
   # XFocusChangeEvent xfocus;
-  # XExposeEvent xexpose;
+  HAS XExposeEvent $.xexpose;
   # XGraphicsExposeEvent xgraphicsexpose;
   # XNoExposeEvent xnoexpose;
   # XVisibilityEvent xvisibility;
