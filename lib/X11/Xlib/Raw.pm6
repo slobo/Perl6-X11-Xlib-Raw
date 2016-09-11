@@ -3,6 +3,10 @@ unit module X11::Xlib::Raw;
 use NativeCall;
 use NativeHelpers::CStruct;
 
+sub libX11 {
+  $*VM.platform-library-name('X11'.IO).Str;
+}
+
 constant XID      is export := ulong;
 constant Window   is export := XID;
 constant Colormap is export := XID;
@@ -171,7 +175,7 @@ class Display {
 sub XOpenDisplay(
   Str
 ) returns Display
-  is native('/opt/X11/lib/libX11.dylib')
+  is native(&libX11)
   is export
   { * }
 
@@ -186,7 +190,7 @@ sub XCreateSimpleWindow(
     ulong,  # border
     ulong   # background
 ) returns Window
-  is native('/opt/X11/lib/libX11.dylib')
+  is native(&libX11)
   is export
   { * }
 
@@ -194,7 +198,7 @@ sub XMapWindow(
     Display,
     Window # w
 ) returns int32
-  is native('/opt/X11/lib/libX11.dylib')
+  is native(&libX11)
   is export
   { * }
 
@@ -203,7 +207,7 @@ sub XSelectInput(
     Window, #    /* w */,
     long    # /* event_mask */
 ) returns int32
-  is native('/opt/X11/lib/libX11.dylib')
+  is native(&libX11)
   is export
   { * }
 
@@ -211,14 +215,14 @@ sub XNextEvent(
     Display, #  display
     XEvent,   #  event_return
 ) returns int32
-  is native('/opt/X11/lib/libX11.dylib')
+  is native(&libX11)
   is export
   { * }
 
 sub XCloseDisplay(
     Display, # display
 ) returns int32
-  is native('/opt/X11/lib/libX11.dylib')
+  is native(&libX11)
   is export
   { * }
 
@@ -231,7 +235,7 @@ sub XFillRectangle(
     uint32, #	/* width */,
     uint32,	#/* height */
 ) returns int32
-  is native('/opt/X11/lib/libX11.dylib')
+  is native(&libX11)
   is export
   { * }
 
@@ -244,7 +248,7 @@ sub XDrawString(
     Str, #	/* string */,
     int32 #			/* length */
 ) returns int32
-  is native('/opt/X11/lib/libX11.dylib')
+  is native(&libX11)
   is export
   { * }
 
