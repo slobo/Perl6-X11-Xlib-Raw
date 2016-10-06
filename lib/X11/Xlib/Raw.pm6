@@ -15,34 +15,53 @@ constant XID      is export := ulong;
 constant Window   is export := XID;
 constant Colormap is export := XID;
 constant Drawable is export := XID;
+constant GContext is export := XID;
+constant VisualID is export := int32;
 constant XBool    is export := int32;
 
+class XPointer is repr('CPointer') {}
 
-class XExtData is repr('CPointer') {}
+#| XExtData structure; Extensions need a way to hang private data on some structures.
+class XExtData is repr('CStruct') {
+	has int32 $.number;          #= number returned by XRegisterExtension
+	has XExtData $.next;         #= next item on list of data for structure
+  has Pointer $!free_private;  #= called to free private storage
+	              # &callback... int (*free_private)(	struct _XExtData *extension);
+	has XPointer $.private_data; #= data private to this extension
+}
+
 class _XPrivate is repr('CPointer') {}
 class _XrmHashBucketRec is repr('CPointer') {}
-class XPointer is repr('CPointer') {}
 
 class Display is repr('CStruct') {...};
 
-#| Graphics Context
-class GC is repr('CPointer') {};
-    # XExtData *ext_data;   hook for extension to hang data
-    # GContext gid;   protocol ID for graphics context
-    #  there is more to this structure, but it is private to Xlib
+#| Graphics Context structure
+#| The contents of this structure are implementation
+#| dependent.  A GC should be treated as opaque by application code.
+class GC is repr('CStruct') {
+  has XExtData $.ext_data;  #= hook for extension to hang data
+  has GContext $.gid;       #= protocol ID for graphics context
+  #  there is more to this structure, but it is private to Xlib
+}
 
-class Visual is repr('CPointer') {};
-# XExtData *ext_data;   hook for extension to hang data
-# VisualID visualid;   visual id of this visual
-# int class;     class of screen (monochrome, etc.)
-# unsigned long red_mask, green_mask, blue_mask;   mask values
-# int bits_per_rgb;   log base 2 of distinct color values
-# int map_entries;   color map entries
+#| Visual structure; contains information about colormapping possible.
+class Visual is repr('CStruct') {
+  has XExtData $.ext_data;  #= hook for extension to hang data
+  has VisualID $.visualid;  #= visual id of this visual
+  has int32 $.class;        #= class of screen (monochrome, etc.)
+  has ulong $.red_mask;     #= red channel mask value
+  has ulong $.green_mask;   #= green channel mask value
+  has ulong $.blue_mask;    #= blue channel mask value
+  has int32 $.bits_per_rgb; #= log base 2 of distinct color values
+  has int32 $.map_entries;  #= color map entries
+}
 
-class Depth is repr('CPointer') {};
-# int depth;        this depth (Z) of the depth
-# int nvisuals;     number of Visual types at this depth
-# Visual *visuals;  list of visuals possible at this depth
+#| Depth structure; contains information for each possible depth.
+class Depth is repr('CStruct') {
+  has int32 $.depth;              #= this depth (Z) of the depth
+  has int32 $.nvisuals;           #= number of Visual types at this depth
+  has Pointer[Visual] $.visuals;  #= list of visuals possible at this depth
+}
 
 
 class XExposeEvent is repr('CStruct') {
