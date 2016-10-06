@@ -141,6 +141,7 @@ class XEvent is repr('CUnion') is export {
   # XKeymapEvent xkeymap;
   # XGenericEvent xgeneric;
   # XGenericEventCookie xcookie;
+
   # horrible hack to size the XEvent struct
   class Padding24 is repr('CStruct') {
     has long $.pad01; has long $.pad02; has long $.pad03; has long $.pad04;
@@ -158,20 +159,20 @@ class Screen is repr('CStruct') is export {
   has XExtData $.ext_data;     #= hook for extension to hang data
   has Display $.display;       #= back pointer to display structure
   has Window $.root;           #= Root window id.
-  has int32 $.width;
-  has int32 $.height;          #= width and height of screen
-  has int32 $.mwidth;
-  has int32 $.mheight;         #= width and height of  in millimeters
+  has int32 $.width;           #= width of screen
+  has int32 $.height;          #= height of screen
+  has int32 $.mwidth;          #= width of screen in millimeters
+  has int32 $.mheight;         #= height of screen  in millimeters
   has int32 $.ndepths;         #= number of depths possible
   has Pointer[Depth] $.depths; #= list of allowable depths on the screen
   has int32 $.root_depth;      #= bits per pixel
   has Visual $.root_visual;    #= root visual
   has GC $.default_gc;         #= GC for the root root visual
   has Colormap $.cmap;         #= default color map
-  has ulong $.white_pixel;
-  has ulong $.black_pixel;     #= White and Black pixel values
-  has int32 $.max_maps,
-  has int32 $.min_maps;        #= max and min color maps
+  has ulong $.white_pixel;     #= White pixel value
+  has ulong $.black_pixel;     #= Black pixel value
+  has int32 $.max_maps,        #= max color maps
+  has int32 $.min_maps;        #= min color maps
   has int32 $.backing_store;   #= Never, WhenMapped, Always
   has int32 $.save_unders;
   has long $.root_input_mask;  #= initial root input mask
