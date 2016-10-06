@@ -26,12 +26,12 @@ class XPointer is repr('CPointer') {}
 class Display is repr('CStruct') {...};
 
 #| Graphics Context
-class GC is repr('CStruct') {};
+class GC is repr('CPointer') {};
     # XExtData *ext_data;   hook for extension to hang data
     # GContext gid;   protocol ID for graphics context
     #  there is more to this structure, but it is private to Xlib
 
-class Visual is repr('CStruct') {};
+class Visual is repr('CPointer') {};
 # XExtData *ext_data;   hook for extension to hang data
 # VisualID visualid;   visual id of this visual
 # int class;     class of screen (monochrome, etc.)
@@ -39,7 +39,7 @@ class Visual is repr('CStruct') {};
 # int bits_per_rgb;   log base 2 of distinct color values
 # int map_entries;   color map entries
 
-class Depth is repr('CStruct') {};
+class Depth is repr('CPointer') {};
 # int depth;        this depth (Z) of the depth
 # int nvisuals;     number of Visual types at this depth
 # Visual *visuals;  list of visuals possible at this depth
