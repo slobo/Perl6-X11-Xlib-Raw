@@ -18,6 +18,9 @@ constant Drawable is export := XID;
 constant GContext is export := XID;
 constant VisualID is export := int32;
 constant XBool    is export := int32;
+constant Status   is export := int32;
+constant Atom     is export := int32;
+constant Time     is export := int32;
 
 class XPointer is repr('CPointer') {}
 
@@ -263,11 +266,92 @@ class Display {
   method WhitePixel($scr) { $.ScreenOfDisplay($scr).white_pixel }
   method DefaultGC($scr)  { $.ScreenOfDisplay($scr).default_gc }
 
+  method DefaultRootWindow() { $.RootWindow($.DefaultScreen) }
+
+
 }
+
+class XWindowAttributes is repr('CStruct') is export {
+  has int32 $.x;
+  has int32 $.y;			#= location of window
+  has int32 $.width;
+  has int32 $.height;		#= width and height of window
+  has int32 $.border_width;		#= border width of window
+  has int32 $.depth;          	#= depth of window
+  has Visual $.visual;		#= the associated visual structure
+  has Window $.root;        	#= root of screen containing window
+  has int32 $.class;			#= InputOutput, InputOnly
+  has int32 $.bit_gravity;		#= one of bit gravity values
+  has int32 $.win_gravity;		#= one of the window gravity values
+  has int32 $.backing_store;		#= NotUseful, WhenMapped, Always
+  has ulong $.backing_planes;#= planes to be preserved if possible
+  has ulong $.backing_pixel;#= value to be used when restoring planes
+  has XBool $.save_under;		#= boolean, should bits under be saved?
+  has Colormap $.colormap;		#= color map to be associated with window
+  has XBool $.map_installed;		#= boolean, is color map currently installed
+  has int32 $.map_state;		#= IsUnmapped, IsUnviewable, IsViewable
+  has long $.all_event_masks;	#= set of events all people have interest in
+  has long $.your_event_mask;	#= my event mask
+  has long $.do_not_propagate_mask; #= set of events that should not propagate
+  has XBool $.override_redirect;	#= boolean value for override-redirect
+  has Screen $.screen;		#= back pointer to correct screen
+}
+
+#| new structure for manipulating TEXT properties; used with WM_NAME,
+#| WM_ICON_NAME, WM_CLIENT_MACHINE, and WM_COMMAND.
+class XTextProperty is repr('CStruct') is export {
+  has Str $.value;     #= same as Property routines
+  has Atom $.encoding; #= prop type
+  has int32 $.format;  #= prop data format: 8, 16, or 32
+  has ulong $.nitems;  #= number of data items in value
+}
+
+class XClassHint is repr('CStruct') is export {
+	has Str $.res_name;
+	has Str $.res_class;
+};
+
+sub XGetClassHint(
+    Display,		# display
+    Window,     # w 
+    XClassHint,	# class_hints_return
+) returns Status
+  is native(&libX11)
+  is export
+  { * }
+
+sub XGetWMName(
+    Display,		# display
+    Window,     # w 
+    XTextProperty,	# text_prop_return
+) returns Status
+  is native(&libX11)
+  is export
+  { * }
+
+
+sub XRaiseWindow(
+    Display, # display
+    Window   # w
+) returns int32
+  is native(&libX11)
+  is export
+  { * }
 
 sub XOpenDisplay(
   Str # "host:display" connection string, pass blank string (C<''>) for default
 ) returns Display
+  is native(&libX11)
+  is export
+  { * }
+
+
+sub XSetInputFocus(
+    Display, # display
+    Window,  # w
+    int32,   # revert_to
+    Time,    # time
+) returns int32
   is native(&libX11)
   is export
   { * }
@@ -345,6 +429,29 @@ sub XDrawString(
   is export
   { * }
 
+
+sub XQueryTree(
+    Display,       # display
+    Window,        # root window
+    Window is rw,  # root_return
+    Window is rw,  # parent_return
+    Pointer is rw, # children_return
+    uint32 is rw   # nchildren_return
+) returns Status
+  is native(&libX11)
+  is export
+  { * }
+
+
+sub XGetWindowAttributes(
+    Display,          # display
+    Window,           # w
+    XWindowAttributes # window_attributes_return
+) returns Status
+  is native(&libX11)
+  is export
+  { * }
+
 enum XEventMask is export (
   NoEventMask               =>      0,
   KeyPressMask              => 1 +< 0,
@@ -372,4 +479,35 @@ enum XEventMask is export (
   PropertyChangeMask        => 1 +< 22,
   ColormapChangeMask        => 1 +< 23,
   OwnerGrabButtonMask       => 1 +< 24,
+);
+
+
+#| Used in GetWindowAttributes reply
+enum WindowMapState is export (
+  IsUnmapped   =>	0,
+  IsUnviewable =>	1,
+  IsViewable  =>	2,
+);
+
+#| Used in SetInputFocus, GetInputFocus
+enum FocusAtoms is export (
+  RevertToNone        => 0,
+  RevertToPointerRoot => 1,
+  RevertToParent      => 2,
+);
+
+#| RESERVED RESOURCE AND CONSTANT DEFINITIONS
+enum ReservedAtoms is export (
+  None            => 0, #=	universal null resource or null atom
+  ParentRelative  => 1, #=	background pixmap in CreateWindow and ChangeWindowAttributes
+  CopyFromParent  => 0, #=	border pixmap in CreateWindow and ChangeWindowAttributes special VisualID and special window class passed to CreateWindow
+  PointerWindow   => 0, #=	destination window in SendEvent
+  InputFocus      => 1, #=	destination window in SendEvent
+  PointerRoot     => 1, #=	focus window in SetInputFocus
+  AnyPropertyType => 0, #=	special Atom, passed to GetProperty
+  AnyKey          => 0, #=	special Key Code, passed to GrabKey
+  AnyButton       => 0, #=	special Button Code, passed to GrabButton
+  AllTemporary    => 0, #=	special Resource ID passed to KillClient
+  CurrentTime     => 0, #=	special Time
+  NoSymbol        => 0, #=	special KeySym
 );
