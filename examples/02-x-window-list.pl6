@@ -4,6 +4,10 @@ use NativeCall;
 use NativeHelpers::Pointer;
 
 # Taken from https://github.com/patrickhaller/no-wm/blob/master/x-window-list.c
+
+# Shows a simple window-list. Note that if you are
+# running a compositing WM, most windows will not show up in the list
+# Provide and list index as first argument to have that window come to front
 sub MAIN($raise_window_num?){
   my $display = XOpenDisplay("") or die 'Cannot open display';
   my $wins := Pointer[Window].new;

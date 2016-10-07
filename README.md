@@ -2,7 +2,7 @@
 
 A `NativeCall` interface to `Xlib`.
 
-Only a subset needed to cover the basic example is currently supported.
+Only a subset needed to cover the examples is currently implemented.
 
 # Examples
 
