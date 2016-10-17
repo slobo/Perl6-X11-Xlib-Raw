@@ -83,6 +83,20 @@ class XExposeEvent is repr('CStruct') {
   has int32 $.count;      #= if non-zero, at least this many more
 };
 
+class XErrorEvent is repr('CStruct') {
+  method gist {
+    "XErrorEvent #$.serial res $.resourceid Err $.error_code for $.request_code:$.minor_code"
+  }
+
+  has int32 $.type;
+  has Display $.display;    #= Display the event was read from
+  has XID $.resourceid;     #= resource id
+  has ulong $.serial;       #= # of last request processed by server
+  has uint8 $.error_code;   #= error code of failed request
+  has uint8 $.request_code; #= Major op-code of failed request
+  has uint8 $.minor_code;   #= Minor op-code of failed request
+}
+
 #| Event names. Used in "type" field in XEvent structures.
 enum Event is export (
   KeyPress         => 2,
@@ -126,6 +140,7 @@ class XEvent is repr('CUnion') is export {
   method gist {
     given $.type {
       when Expose { $!xexpose.gist }
+      default { "Unsupported Type: $.type"}
     }
   }
 
@@ -159,7 +174,7 @@ class XEvent is repr('CUnion') is export {
   # XColormapEvent xcolormap;
   # XClientMessageEvent xclient;
   # XMappingEvent xmapping;
-  # XErrorEvent xerror;
+  HAS XErrorEvent $.xerror;
   # XKeymapEvent xkeymap;
   # XGenericEvent xgeneric;
   # XGenericEventCookie xcookie;
@@ -313,7 +328,7 @@ class XClassHint is repr('CStruct') is export {
 
 sub XGetClassHint(
     Display,		# display
-    Window,     # w 
+    Window,     # w
     XClassHint,	# class_hints_return
 ) returns Status
   is native(&libX11)
@@ -322,7 +337,7 @@ sub XGetClassHint(
 
 sub XGetWMName(
     Display,		# display
-    Window,     # w 
+    Window,     # w
     XTextProperty,	# text_prop_return
 ) returns Status
   is native(&libX11)
@@ -345,12 +360,33 @@ sub XOpenDisplay(
   is export
   { * }
 
+sub XDisplayName(
+  Str # "host:display" connection string, pass blank string (C<''>) for default
+) returns Str
+  is native(&libX11)
+  is export
+  { * }
+
+sub XDisplayString(
+  Display # display
+) returns Str
+  is native(&libX11)
+  is export
+  { * }
 
 sub XSetInputFocus(
     Display, # display
     Window,  # w
     int32,   # revert_to
     Time,    # time
+) returns int32
+  is native(&libX11)
+  is export
+  { * }
+
+sub XSync(
+  Display, # display
+  XBool    # discard
 ) returns int32
   is native(&libX11)
   is export
@@ -448,6 +484,14 @@ sub XGetWindowAttributes(
     Window,           # w
     XWindowAttributes # window_attributes_return
 ) returns Status
+  is native(&libX11)
+  is export
+  { * }
+
+
+sub XSetErrorHandler(
+  &handler ( Display, XErrorEvent --> int32 )
+) returns int32
   is native(&libX11)
   is export
   { * }
