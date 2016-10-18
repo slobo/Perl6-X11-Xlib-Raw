@@ -2,6 +2,8 @@ unit module X11::Xlib::Raw;
 
 use NativeCall;
 use NativeHelpers::CStruct;
+use X11::Xlib::Raw::X;
+use X11::Xlib::Raw::Xproto;
 
 sub libX11 {
   $*VM.config<os> eq 'darwin'
@@ -85,7 +87,9 @@ class XExposeEvent is repr('CStruct') {
 
 class XErrorEvent is repr('CStruct') {
   method gist {
-    "XErrorEvent #$.serial res $.resourceid Err $.error_code for $.request_code:$.minor_code"
+    my $error   = X11::Xlib::Raw::X::XErrorCodes($.error_code);
+    my $request = X11::Xlib::Raw::Xproto::RequestCodes($.request_code);
+    "XErrorEvent: $.error_code - $error for $.request_code:$.minor_code - $request on Resource ID $.resourceid"
   }
 
   has int32 $.type;
@@ -439,6 +443,18 @@ sub XCloseDisplay(
   is export
   { * }
 
+sub XGrabServer( Display ) returns int32
+  is native(&libX11) is export { * }
+
+sub XUngrabServer( Display ) returns int32
+  is native(&libX11) is export { * }
+
+sub XAddToSaveSet( Display, Window ) returns int32
+  is native(&libX11) is export { * }
+
+sub XReparentWindow( Display, Window $w, Window	$parent, int32 $x, int32 $y ) returns int32
+  is native(&libX11) is export { * }
+
 sub XFillRectangle(
     Display,  # display
     Drawable, # drawable
@@ -495,6 +511,12 @@ sub XSetErrorHandler(
   is native(&libX11)
   is export
   { * }
+
+sub XGetErrorText( Display, int32 $code, Str $buffer_return is rw, int32 $length ) returns int32
+  is native(&libX11) is export { * }
+
+sub XFree( Pointer[void] ) returns int32
+  is native(&libX11) is export { * }
 
 enum XEventMask is export (
   NoEventMask               =>      0,
