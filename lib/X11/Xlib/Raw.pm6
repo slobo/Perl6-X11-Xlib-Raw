@@ -18,11 +18,14 @@ constant Window   is export := XID;
 constant Colormap is export := XID;
 constant Drawable is export := XID;
 constant GContext is export := XID;
+constant Cursor   is export := XID;
 constant VisualID is export := int32;
 constant XBool    is export := int32;
 constant Status   is export := int32;
 constant Atom     is export := int32;
 constant Time     is export := int32;
+constant KeyCode  is export := uint8;
+constant KeySym   is export := XID;
 
 class XPointer is repr('CPointer') {}
 
@@ -140,18 +143,97 @@ enum Event is export (
   LASTEvent        => 36,
 );
 
+
+class XKeyEvent is repr('CStruct') {
+  method gist {
+    "XKeyEvent #$.serial@$.time Window $.window @($.x,$.y) Root $.root @($.x_root,$.y_root) SubWindow $.subwindow State {sprintf("%b", $.state)} KeyCode $.keycode SameScreen: $.same_screen {$.send_event ?? 'from SendEvent' !! ''}"
+  }
+  has int32 $.type;
+  has ulong $.serial;      #= # of last request processed by server
+  has XBool $.send_event;  #= true if this came from a SendEvent request
+  has Display $.display;   #= Display the event was read from
+  has Window $.window;     #= "event" window it is reported relative to
+  has Window $.root;       #= root window that the event occurred on
+  has Window $.subwindow;  #= child window
+  has Time $.time;         #= milliseconds
+  has int32 $.x;           #= pointer x coordinate in event window
+  has int32 $.y;           #= pointer y coordinate in event window
+  has int32 $.x_root;      #= pointer x coordinate relative to root
+  has int32 $.y_root;      #= pointer y coordinate relative to root
+  has uint32 $.state;      #= key or button mask
+  has uint32 $.keycode;    #= detail
+  has XBool $.same_screen; #= same screen flag
+};
+
+class XButtonEvent is repr('CStruct') {
+  method gist {
+    "XButtonEvent #$.serial Window $.window @($.x,$.y) Root $.root @($.x_root,$.y_root) SubWindow $.subwindow State $.state Button $.button SameScreen: $.same_screen {$.send_event ?? 'from SendEvent' !! ''}"
+  }
+  has int32 $.type;
+  has ulong $.serial;      #= # of last request processed by server
+  has XBool $.send_event;  #= true if this came from a SendEvent request
+  has Display $.display;   #= Display the event was read from
+  has Window $.window;     #= "event" window it is reported relative to
+  has Window $.root;       #= root window that the event occurred on
+  has Window $.subwindow;  #= child window
+  has Time $.time;         #= milliseconds
+  has int32 $.x;           #= pointer x coordinate in event window
+  has int32 $.y;           #= pointer y coordinate in event window
+  has int32 $.x_root;      #= pointer x coordinate relative to root
+  has int32 $.y_root;      #= pointer y coordinate relative to root
+  has uint32 $.state;      #= key or button mask
+  has uint32 $.button;     #= detail
+  has XBool $.same_screen; #= same screen flag
+};
+
+
+class XUnmapEvent is repr('CStruct') {
+  method gist {
+    "XUnmapEvent #$.serial Event $.event Window $.window {$.send_event ?? 'from SendEvent' !! ''}"
+  }
+  has int32 $.type;
+  has ulong $.serial;     #= # of last request processed by server
+  has XBool $.send_event; #= true if this came from a SendEvent request
+  has Display $.display;  #= Display the event was read from
+  has Window $.event;
+  has Window $.window;
+  has XBool $.from_configure;
+};
+
+class XMapRequestEvent is repr('CStruct') {
+  method gist {
+    "XMapRequestEvent #$.serial Parent $.parent Window $.window {$.send_event ?? 'from SendEvent' !! ''}"
+  }
+  has int32 $.type;
+  has ulong $.serial;     #= # of last request processed by server
+  has XBool $.send_event; #= true if this came from a SendEvent request
+  has Display $.display;  #= Display the event was read from
+  has Window $.parent;
+  has Window $.window;
+};
+
+
 class XEvent is repr('CUnion') is export {
   method gist {
     given $.type {
+      when KeyPress { $!xkey.gist }
+      when KeyRelease { $!xkey.gist }
+      when ButtonPress { $!xbutton.gist }
+      when ButtonRelease { $!xbutton.gist }
       when Expose { $!xexpose.gist }
-      default { "Unsupported Type: $.type"}
+      when UnmapNotify { $!xunmap.gist }
+      when MapRequest { $!xmaprequest.gist }
+      default {
+        my $event_name = Event($.type);
+        "Xlib::Raw Unimplemented Type: $.type - $event_name";
+      }
     }
   }
 
   has int32 $.type;    #= type of event, see L<Event> enum
   # XAnyEvent xany;
-  # XKeyEvent xkey;
-  # XButtonEvent xbutton;
+  HAS XKeyEvent $.xkey;
+  HAS XButtonEvent $.xbutton;
   # XMotionEvent xmotion;
   # XCrossingEvent xcrossing;
   # XFocusChangeEvent xfocus;
@@ -161,9 +243,9 @@ class XEvent is repr('CUnion') is export {
   # XVisibilityEvent xvisibility;
   # XCreateWindowEvent xcreatewindow;
   # XDestroyWindowEvent xdestroywindow;
-  # XUnmapEvent xunmap;
+  HAS XUnmapEvent $.xunmap;
   # XMapEvent xmap;
-  # XMapRequestEvent xmaprequest;
+  HAS XMapRequestEvent $.xmaprequest;
   # XReparentEvent xreparent;
   # XConfigureEvent xconfigure;
   # XGravityEvent xgravity;
@@ -443,6 +525,16 @@ sub XCloseDisplay(
   is export
   { * }
 
+
+sub XGrabButton( Display, uint32 $button, uint32 $modifiers, Window $grab_window,
+  XBool $owner_events, uint32 $event_mask, int32 $pointer_mode, int32 $keyboard_mode,
+  Window $confine_to, Cursor ) returns int32
+  is native(&libX11) is export { * }
+
+sub XGrabKey( Display, int32 $keycode, uint32 $modifiers, Window $grab_window,
+  XBool $owner_events, int32 $pointer_mode, int32 $keyboard_mode ) returns int32
+  is native(&libX11) is export { * }
+
 sub XGrabServer( Display ) returns int32
   is native(&libX11) is export { * }
 
@@ -452,7 +544,16 @@ sub XUngrabServer( Display ) returns int32
 sub XAddToSaveSet( Display, Window ) returns int32
   is native(&libX11) is export { * }
 
+sub XRemoveFromSaveSet( Display, Window ) returns int32
+  is native(&libX11) is export { * }
+
 sub XReparentWindow( Display, Window $w, Window	$parent, int32 $x, int32 $y ) returns int32
+  is native(&libX11) is export { * }
+
+sub XDestroyWindow( Display, Window ) returns int32
+  is native(&libX11) is export { * }
+
+sub XUnmapWindow( Display, Window ) returns int32
   is native(&libX11) is export { * }
 
 sub XFillRectangle(
@@ -513,6 +614,9 @@ sub XSetErrorHandler(
   { * }
 
 sub XGetErrorText( Display, int32 $code, Str $buffer_return is rw, int32 $length ) returns int32
+  is native(&libX11) is export { * }
+
+sub XKeysymToKeycode( Display, KeySym ) returns KeyCode
   is native(&libX11) is export { * }
 
 sub XFree( Pointer[void] ) returns int32
