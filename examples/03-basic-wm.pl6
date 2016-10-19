@@ -4,6 +4,7 @@ use X11::Xlib::Raw;
 use NativeCall;
 use NativeHelpers::Pointer;
 use X11::Xlib::Raw::X;
+use X11::Xlib::Raw::keysym;
 
 class WindowManager { ... };
 
@@ -92,18 +93,21 @@ class WindowManager {
   method frame(Window $w) {
     note "Framing $w";
 
-    # // Visual properties of the frame to create.
+    # Visual properties of the frame to create.
     constant BORDER_WIDTH = 3;
     constant BORDER_COLOR = 0xff0000;
     constant BG_COLOR = 0x0000ff;
-    #
-    # CHECK(!clients_.count(w));
-    #
-    # // 1. Retrieve attributes of window to frame.
+
+    if %!clients{ $w }:exists {
+      note "Already have a frame for $w";
+      return;
+    }
+
+    # 1. Retrieve attributes of window to frame.
     my XWindowAttributes $x_window_attrs .= new;
     XGetWindowAttributes($.display, $w, $x_window_attrs);
 
-    # // 2. Create frame.
+    # 2. Create frame.
     my Window $frame = XCreateSimpleWindow(
       $.display,
       $.display.DefaultRootWindow,
@@ -116,65 +120,62 @@ class WindowManager {
       BG_COLOR
     );
 
-    # // 3. Select events on frame.
+    # 3. Select events on frame.
     XSelectInput($.display, $frame, SubstructureRedirectMask +| SubstructureNotifyMask);
 
-    # // 4. Add client to save set, so that it will be restored and kept alive if we
-    # // crash.
+    # 4. Add client to save set, so that it will be restored and kept alive if we crash.
     XAddToSaveSet($.display, $w);
-    # // 5. Reparent client window.
+    # 5. Reparent client window.
     XReparentWindow($.display, $w, $frame, 0, 0);
-    # // 6. Map frame.
+    # 6. Map frame.
     XMapWindow($.display, $frame);
-    # // 7. Save frame handle.
-    %!clients<$w> = $frame;
+    # 7. Save frame handle.
+    %!clients{ $w } = $frame;
 
-    #
-    #
-    # // 8. Grab universal window management actions on client window.
-    # //   a. Move windows with alt + left button.
-    # XGrabButton(
-    #     display_,
-    #     Button1,
-    #     Mod1Mask,
-    #     w,
-    #     false,
-    #     ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
-    #     GrabModeAsync,
-    #     GrabModeAsync,
-    #     None,
-    #     None);
-    # //   b. Resize windows with alt + right button.
-    # XGrabButton(
-    #     display_,
-    #     Button3,
-    #     Mod1Mask,
-    #     w,
-    #     false,
-    #     ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
-    #     GrabModeAsync,
-    #     GrabModeAsync,
-    #     None,
-    #     None);
-    # //   c. Kill windows with alt + f4.
-    # XGrabKey(
-    #     display_,
-    #     XKeysymToKeycode(display_, XK_F4),
-    #     Mod1Mask,
-    #     w,
-    #     false,
-    #     GrabModeAsync,
-    #     GrabModeAsync);
-    # //   d. Switch windows with alt + tab.
-    # XGrabKey(
-    #     display_,
-    #     XKeysymToKeycode(display_, XK_Tab),
-    #     Mod1Mask,
-    #     w,
-    #     false,
-    #     GrabModeAsync,
-    #     GrabModeAsync);
-    #
+    # 8. Grab universal window management actions on client window.
+    #   a. Move windows with alt + left button.
+    XGrabButton(
+        $.display,
+        Button1,
+        Mod1Mask,
+        $w,
+        False,
+        ButtonPressMask +| ButtonReleaseMask +| ButtonMotionMask,
+        GrabModeAsync,
+        GrabModeAsync,
+        None,
+        None) or note "Unable to Grab Window";
+    #   b. Resize windows with alt + right button.
+    XGrabButton(
+        $.display,
+        Button3,
+        Mod1Mask,
+        $w,
+        False,
+        ButtonPressMask +| ButtonReleaseMask +| ButtonMotionMask,
+        GrabModeAsync,
+        GrabModeAsync,
+        None,
+        None);
+    #   c. Kill windows with alt + f4.
+    XGrabKey(
+        $.display,
+        XKeysymToKeycode($.display, XK_F4),
+        Mod1Mask,
+        $w,
+        False,
+        GrabModeAsync,
+        GrabModeAsync);
+    #   d. Switch windows with alt + tab.
+    XGrabKey(
+        $.display,
+        XKeysymToKeycode($.display, XK_Tab),
+        Mod1Mask,
+        $w,
+        False,
+        GrabModeAsync,
+        GrabModeAsync);
+
     note "Framed window $w [$frame]";
   }
 
@@ -201,21 +202,60 @@ class WindowManager {
         # when MapNotify {
         #   OnMapNotify($e.xmap);
         # }
-        # when UnmapNotify {
-        #   OnUnmapNotify($e.xunmap);
-        # }
+        when UnmapNotify {
+          # If the window is a client window we manage, unframe it upon UnmapNotify. We
+          # need the check because other than a client window, we can receive an
+          # UnmapNotify for
+          #     - A frame we just destroyed ourselves.
+          #     - A pre-existing and mapped top-level window we reparented.
+          if ! ( %!clients{ $e.xunmap.window }:exists ) {
+            note "Ignore UnmapNotify for non-client window {$e.xunmap.window}";
+            note %!clients;
+            next;
+          }
+          if $e.xunmap.event == $.display.DefaultRootWindow {
+            note "Ignore UnmapNotify for reparented pre-existing window {$e.xunmap.window}";
+            next;
+          }
+          $.unframe($e.xunmap.window);
+        }
         # when ConfigureNotify {
         #   OnConfigureNotify($e.xconfigure);
         # }
-        # when MapRequest {
-        #   OnMapRequest($e.xmaprequest);
-        # }
+        when MapRequest {
+          # 1. Frame or re-frame window.
+          $.frame($e.xmaprequest.window);
+          # 2. Actually map window.
+          XMapWindow($.display, $e.xmaprequest.window);
+        }
         # when ConfigureRequest {
         #   OnConfigureRequest($e.xconfigurerequest);
         # }
-        # when ButtonPress {
-        #   OnButtonPress($e.xbutton);
-        # }
+        when ButtonPress {
+          # CHECK(clients_.count($e.xbutton.window));
+          my $frame = %!clients{ $e.xbutton.window };
+
+          # # 1. Save initial cursor position.
+          # drag_start_pos_ = Position<int>($e.xbutton.x_root, $e.xbutton.y_root);
+          #
+          # # 2. Save initial window info.
+          # Window returned_root;
+          # int x, y;
+          # unsigned width, height, border_width, depth;
+          # CHECK(XGetGeometry(
+          #     $.display,
+          #     frame,
+          #     &returned_root,
+          #     &x, &y,
+          #     &width, &height,
+          #     &border_width,
+          #     &depth));
+          # drag_start_frame_pos_ = Position<int>(x, y);
+          # drag_start_frame_size_ = Size<int>(width, height);
+
+          # 3. Raise clicked window to top.
+          XRaiseWindow($.display, $frame);
+        }
         # when ButtonRelease {
         #   OnButtonRelease($e.xbutton);
         # }
@@ -225,9 +265,60 @@ class WindowManager {
         #       $.display, $e.xmotion.window, MotionNotify, $e)) {}
         #   OnMotionNotify($e.xmotion);
         # }
-        # when KeyPress {
-        #   OnKeyPress($e.xkey);
-        # }
+        when KeyPress {
+          note "KeyPress Indeed, inspecting "
+            ~ sprintf(" state %b & %b, keycode: %x == %x ", $e.xkey.state, Mod1Mask, $e.xkey.keycode,  XKeysymToKeycode($.display, XK_F4));
+          if ($e.xkey.state +& Mod1Mask) &&
+              ($e.xkey.keycode == XKeysymToKeycode($.display, XK_F4)) {
+            note "Closing Window $e.xkey.window";
+            # alt + f4: Close window.
+            #
+            # There are two ways to tell an X window to close. The first is to send it
+            # a message of type WM_PROTOCOLS and value WM_DELETE_WINDOW. If the client
+            # has not explicitly marked itself as supporting this more civilized
+            # behavior (using XSetWMProtocols()), we kill it with XKillClient().
+            # Atom* supported_protocols;
+            # int num_supported_protocols;
+            # if (XGetWMProtocols(display_,
+            #                     e.window,
+            #                     &supported_protocols,
+            #                     &num_supported_protocols) &&
+            #     (std::find(supported_protocols,
+            #                supported_protocols + num_supported_protocols,
+            #                WM_DELETE_WINDOW) !=
+            #      supported_protocols + num_supported_protocols)) {
+            #   LOG(INFO) << "Gracefully deleting window " << e.window;
+            #   # 1. Construct message.
+            #   XEvent msg;
+            #   memset(&msg, 0, sizeof(msg));
+            #   msg.xclient.type = ClientMessage;
+            #   msg.xclient.message_type = WM_PROTOCOLS;
+            #   msg.xclient.window = e.window;
+            #   msg.xclient.format = 32;
+            #   msg.xclient.data.l[0] = WM_DELETE_WINDOW;
+            #   # 2. Send message to window to be closed.
+            #   CHECK(XSendEvent(display_, e.window, false, 0, &msg));
+            # } else {
+            #   LOG(INFO) << "Killing window " << e.window;
+            #   XKillClient(display_, e.window);
+            # }
+          }
+          elsif ($e.xkey.state +& Mod1Mask) &&
+                     ($e.xkey.keycode == XKeysymToKeycode($.display, XK_Tab)) {
+            note "Alt + tab - switching window";
+            # # alt + tab: Switch window.
+            # # 1. Find next window.
+            # auto i = clients_.find(e.window);
+            # CHECK(i != clients_.end());
+            # ++i;
+            # if (i == clients_.end()) {
+            #   i = clients_.begin();
+            # }
+            # # 2. Raise and set focus.
+            # XRaiseWindow(display_, i->second);
+            # XSetInputFocus(display_, i->first, RevertToPointerRoot, CurrentTime);
+          }
+        }
         # when KeyRelease {
         #   OnKeyRelease($e.xkey);
         # }
@@ -236,5 +327,27 @@ class WindowManager {
         }
       }
     }
+  }
+
+  method unframe($w) {
+    # We reverse the steps taken in Frame().
+    my $frame = %!clients{ $w };
+    if ! $frame {
+      note "Request to unframe window that we did not track: $w";
+      return;
+    }
+
+    # 1. Unmap frame.
+    XUnmapWindow($.display, $frame);
+    # 2. Reparent client window.
+    XReparentWindow( $.display, $w, $.display.DefaultRootWindow, 0, 0);
+    # 3. Remove client window from save set, as it is now unrelated to us.
+    XRemoveFromSaveSet($.display, $w);
+    # 4. Destroy frame.
+    XDestroyWindow($.display, $frame);
+    # 5. Drop reference to frame handle.
+    %!clients{ $w }:delete;
+
+    note "Unframed window $w [ $frame ]";
   }
 }
