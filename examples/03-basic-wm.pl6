@@ -7,7 +7,7 @@ use X11::Xlib::Raw::X;
 
 class WindowManager { ... };
 
-sub MAIN($raise_window_num?){
+sub MAIN {
   my $display = XOpenDisplay("") or die 'Cannot open display';
 
   WindowManager.new(display => $display).run;
@@ -30,6 +30,8 @@ class WindowManager {
   method become-wm {
     note "Requesting to become WM on " ~ XDisplayName("");
     my Bool $another_wm_detected;
+
+    # Temporary error handler while we attempt to become WM for this display
     XSetErrorHandler(-> $disp, $error {
       # In the case of an already running window manager, the error code from
       # XSelectInput is BadAccess. We don't expect this handler to receive any
@@ -39,20 +41,24 @@ class WindowManager {
       note "Got error while requesting to become WM: " ~ $error.gist;
       $another_wm_detected = True;
     } );
+
+    # Stake the claim on needed events
     XSelectInput($.display, $.display.DefaultRootWindow, SubstructureRedirectMask +| SubstructureNotifyMask);
+
     # Since Xlib buffers requests, we need to manually sync to see if XSelectInput succeeded
     XSync($.display, False);
 
     if $another_wm_detected {
       note "Detected another window manager on display " ~ XDisplayString($.display);
       return False;
+    } else {
+      note "Ok, We are the WM";
+      return True;
     }
-
-    note "Ok, We are the WM";
-    return True;
   }
 
   method set-error-handler {
+    # Just dump any errors to console
     XSetErrorHandler(-> $disp, $error {
       note "Got error: " ~ $error.gist;
       return 0; # ignored anyways
