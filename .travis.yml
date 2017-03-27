@@ -12,4 +12,4 @@ install:
   - rakudobrew build panda
   - panda installdeps .
 
-script: prove -v -e "perl6 -Ilib" t/ && panda install .
+script: prove -v -e "perl6 -Ilib" t/ && zef install .
