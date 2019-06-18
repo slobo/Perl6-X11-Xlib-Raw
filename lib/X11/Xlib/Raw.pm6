@@ -31,11 +31,11 @@ class XPointer is repr('CPointer') {}
 
 #| XExtData structure; Extensions need a way to hang private data on some structures.
 class XExtData is repr('CStruct') {
-	has int32 $.number;          #= number returned by XRegisterExtension
-	has XExtData $.next;         #= next item on list of data for structure
+  has int32 $.number;          #= number returned by XRegisterExtension
+  has XExtData $.next;         #= next item on list of data for structure
   has Pointer $!free_private;  #= called to free private storage
-	              # &callback... int (*free_private)(	struct _XExtData *extension);
-	has XPointer $.private_data; #= data private to this extension
+                # &CALLBACK... int (*free_private)(  struct _XExtData *extension);
+  has XPointer $.private_data; #= data private to this extension
 }
 
 class _XPrivate is repr('CPointer') {}
@@ -322,12 +322,12 @@ class Display {
   has ulong $!private5;
   has int32 $!private6;
   has Pointer[void] $.resource_alloc; #= &callback(Display --> ulong)   allocator function
-  has int32 $.byte_order;          #= screen byte order, LSBFirst, MSBFirst
-  has int32 $.bitmap_unit;         #= padding and data requirements
-  has int32 $.bitmap_pad;          #= padding requirements on bitmaps
-  has int32 $.bitmap_bit_order;    #= LeastSignificant or MostSignificant
-  has int32 $.nformats;            #= number of pixmap formats in list
-  has ScreenFormat $.pixmap_format; #= pixmap format list
+  has int32 $.byte_order;             #= screen byte order, LSBFirst, MSBFirst
+  has int32 $.bitmap_unit;            #= padding and data requirements
+  has int32 $.bitmap_pad;             #= padding requirements on bitmaps
+  has int32 $.bitmap_bit_order;       #= LeastSignificant or MostSignificant
+  has int32 $.nformats;               #= number of pixmap formats in list
+  has ScreenFormat $.pixmap_format;   #= pixmap format list
   has int32 $!private8;
   has int32 $.release;            #= release of the server
   has _XPrivate $!private9;
@@ -374,28 +374,28 @@ class Display {
 
 class XWindowAttributes is repr('CStruct') is export {
   has int32 $.x;
-  has int32 $.y;			#= location of window
+  has int32 $.y;                    #= location of window
   has int32 $.width;
-  has int32 $.height;		#= width and height of window
-  has int32 $.border_width;		#= border width of window
-  has int32 $.depth;          	#= depth of window
-  has Visual $.visual;		#= the associated visual structure
-  has Window $.root;        	#= root of screen containing window
-  has int32 $.class;			#= InputOutput, InputOnly
-  has int32 $.bit_gravity;		#= one of bit gravity values
-  has int32 $.win_gravity;		#= one of the window gravity values
-  has int32 $.backing_store;		#= NotUseful, WhenMapped, Always
-  has ulong $.backing_planes;#= planes to be preserved if possible
-  has ulong $.backing_pixel;#= value to be used when restoring planes
-  has XBool $.save_under;		#= boolean, should bits under be saved?
-  has Colormap $.colormap;		#= color map to be associated with window
-  has XBool $.map_installed;		#= boolean, is color map currently installed
-  has int32 $.map_state;		#= IsUnmapped, IsUnviewable, IsViewable
-  has long $.all_event_masks;	#= set of events all people have interest in
-  has long $.your_event_mask;	#= my event mask
+  has int32 $.height;               #= width and height of window
+  has int32 $.border_width;         #= border width of window
+  has int32 $.depth;                #= depth of window
+  has Visual $.visual;              #= the associated visual structure
+  has Window $.root;                #= root of screen containing window
+  has int32 $.class;                #= InputOutput, InputOnly
+  has int32 $.bit_gravity;          #= one of bit gravity values
+  has int32 $.win_gravity;          #= one of the window gravity values
+  has int32 $.backing_store;        #= NotUseful, WhenMapped, Always
+  has ulong $.backing_planes;       #= planes to be preserved if possible
+  has ulong $.backing_pixel;        #= value to be used when restoring planes
+  has XBool $.save_under;           #= boolean, should bits under be saved?
+  has Colormap $.colormap;          #= color map to be associated with window
+  has XBool $.map_installed;        #= boolean, is color map currently installed
+  has int32 $.map_state;            #= IsUnmapped, IsUnviewable, IsViewable
+  has long $.all_event_masks;       #= set of events all people have interest in
+  has long $.your_event_mask;       #= my event mask
   has long $.do_not_propagate_mask; #= set of events that should not propagate
-  has XBool $.override_redirect;	#= boolean value for override-redirect
-  has Screen $.screen;		#= back pointer to correct screen
+  has XBool $.override_redirect;    #= boolean value for override-redirect
+  has Screen $.screen;              #= back pointer to correct screen
 }
 
 #| new structure for manipulating TEXT properties; used with WM_NAME,
@@ -408,23 +408,23 @@ class XTextProperty is repr('CStruct') is export {
 }
 
 class XClassHint is repr('CStruct') is export {
-	has Str $.res_name;
-	has Str $.res_class;
+  has Str $.res_name;
+  has Str $.res_class;
 };
 
 sub XGetClassHint(
-    Display,		# display
+    Display,    # display
     Window,     # w
-    XClassHint,	# class_hints_return
+    XClassHint, # class_hints_return
 ) returns Status
   is native(&libX11)
   is export
   { * }
 
 sub XGetWMName(
-    Display,		# display
-    Window,     # w
-    XTextProperty,	# text_prop_return
+    Display,       # display
+    Window,        # w
+    XTextProperty, # text_prop_return
 ) returns Status
   is native(&libX11)
   is export
@@ -547,7 +547,7 @@ sub XAddToSaveSet( Display, Window ) returns int32
 sub XRemoveFromSaveSet( Display, Window ) returns int32
   is native(&libX11) is export { * }
 
-sub XReparentWindow( Display, Window $w, Window	$parent, int32 $x, int32 $y ) returns int32
+sub XReparentWindow( Display, Window $w, Window  $parent, int32 $x, int32 $y ) returns int32
   is native(&libX11) is export { * }
 
 sub XDestroyWindow( Display, Window ) returns int32
@@ -654,9 +654,9 @@ enum XEventMask is export (
 
 #| Used in GetWindowAttributes reply
 enum WindowMapState is export (
-  IsUnmapped   =>	0,
-  IsUnviewable =>	1,
-  IsViewable  =>	2,
+  IsUnmapped   =>  0,
+  IsUnviewable =>  1,
+  IsViewable  =>  2,
 );
 
 #| Used in SetInputFocus, GetInputFocus
@@ -668,16 +668,16 @@ enum FocusAtoms is export (
 
 #| RESERVED RESOURCE AND CONSTANT DEFINITIONS
 enum ReservedAtoms is export (
-  None            => 0, #=	universal null resource or null atom
-  ParentRelative  => 1, #=	background pixmap in CreateWindow and ChangeWindowAttributes
-  CopyFromParent  => 0, #=	border pixmap in CreateWindow and ChangeWindowAttributes special VisualID and special window class passed to CreateWindow
-  PointerWindow   => 0, #=	destination window in SendEvent
-  InputFocus      => 1, #=	destination window in SendEvent
-  PointerRoot     => 1, #=	focus window in SetInputFocus
-  AnyPropertyType => 0, #=	special Atom, passed to GetProperty
-  AnyKey          => 0, #=	special Key Code, passed to GrabKey
-  AnyButton       => 0, #=	special Button Code, passed to GrabButton
-  AllTemporary    => 0, #=	special Resource ID passed to KillClient
-  CurrentTime     => 0, #=	special Time
-  NoSymbol        => 0, #=	special KeySym
+  None            => 0, #=  universal null resource or null atom
+  ParentRelative  => 1, #=  background pixmap in CreateWindow and ChangeWindowAttributes
+  CopyFromParent  => 0, #=  border pixmap in CreateWindow and ChangeWindowAttributes special VisualID and special window class passed to CreateWindow
+  PointerWindow   => 0, #=  destination window in SendEvent
+  InputFocus      => 1, #=  destination window in SendEvent
+  PointerRoot     => 1, #=  focus window in SetInputFocus
+  AnyPropertyType => 0, #=  special Atom, passed to GetProperty
+  AnyKey          => 0, #=  special Key Code, passed to GrabKey
+  AnyButton       => 0, #=  special Button Code, passed to GrabButton
+  AllTemporary    => 0, #=  special Resource ID passed to KillClient
+  CurrentTime     => 0, #=  special Time
+  NoSymbol        => 0, #=  special KeySym
 );
